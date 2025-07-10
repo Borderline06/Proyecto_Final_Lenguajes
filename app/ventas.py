@@ -43,13 +43,22 @@ def ventana_ventas():
     tree_carrito.pack(pady=10, fill="x")
 
     # Agregar al carrito
+    # Agregar al carrito
     def agregar_al_carrito():
         selected = tree_productos.selection()
         if not selected:
             messagebox.showwarning("Advertencia", "Seleccione un producto")
             return
+
         item = tree_productos.item(selected[0])
         id_producto, nombre, precio, stock = item["values"]
+
+        try:
+            precio = float(precio)  # Asegurarse que es número
+            stock = int(stock)      # Por si acaso también
+        except ValueError:
+            messagebox.showerror("Error", "Datos inválidos del producto.")
+            return
 
         cantidad = simpledialog.askinteger("Cantidad", f"Ingrese cantidad para '{nombre}' (Disponible: {stock}):", minvalue=1, maxvalue=stock)
         if cantidad is None:
