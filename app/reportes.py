@@ -57,7 +57,7 @@ def ventana_reportes():
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo obtener detalle\n{e}")
 
-    # Botones
+    # Botones 
     frame_botones = tk.Frame(ventana)
     frame_botones.pack(pady=10)
 
