@@ -2,19 +2,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from app.db import conectar
 
-def ventana_reportes():
-    ventana = tk.Toplevel()
-    ventana.title("Reportes de Ventas")
-    ventana.geometry("800x500")
-
-    # Tabla Ventas
-    tree_ventas = ttk.Treeview(ventana, columns=("ID", "Fecha", "Total"), show="headings")
+def cargar_vista(parent):
+    # Tabla de ventas
+    tree_ventas = ttk.Treeview(parent, columns=("ID", "Fecha", "Total"), show="headings")
     for col in ("ID", "Fecha", "Total"):
         tree_ventas.heading(col, text=col)
         tree_ventas.column(col, width=200)
-    tree_ventas.pack(pady=10, fill="x")
+    tree_ventas.pack(pady=10, fill="x", padx=10)
 
-    # Cargar Ventas
+    # Función para cargar las ventas
     def cargar_ventas():
         for fila in tree_ventas.get_children():
             tree_ventas.delete(fila)
@@ -28,7 +24,7 @@ def ventana_reportes():
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron cargar las ventas\n{e}")
 
-    # Ver Detalle
+    # Función para ver detalle de una venta
     def ver_detalle():
         selected = tree_ventas.selection()
         if not selected:
@@ -49,16 +45,18 @@ def ventana_reportes():
             detalles = cursor.fetchall()
             conexion.close()
 
-            detalle_texto = "\n".join([f"{nombre} - Cantidad: {cantidad} - Subtotal: S/. {subtotal:.2f}" 
-                                       for nombre, cantidad, subtotal in detalles])
+            detalle_texto = "\n".join([
+                f"{nombre} - Cantidad: {cantidad} - Subtotal: S/. {subtotal:.2f}"
+                for nombre, cantidad, subtotal in detalles
+            ])
 
             messagebox.showinfo("Detalle de Venta", detalle_texto or "No hay detalles")
 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo obtener detalle\n{e}")
 
-    # Botones 
-    frame_botones = tk.Frame(ventana)
+    # Botones
+    frame_botones = tk.Frame(parent)
     frame_botones.pack(pady=10)
 
     tk.Button(frame_botones, text="Cargar Ventas", command=cargar_ventas).grid(row=0, column=0, padx=5)

@@ -1,7 +1,9 @@
-CREATE DATABASE IF NOT EXISTS minimarket_db;
+DROP DATABASE IF EXISTS minimarket_db;
+CREATE DATABASE minimarket_db;
 USE minimarket_db;
 
-CREATE TABLE IF NOT EXISTS productos (
+-- Tabla: Productos
+CREATE TABLE productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     categoria VARCHAR(100),
@@ -9,13 +11,25 @@ CREATE TABLE IF NOT EXISTS productos (
     stock INT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS ventas (
+-- Tabla: Usuarios con roles
+CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    total DECIMAL(10,2) NOT NULL
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    contraseña VARCHAR(50) NOT NULL,
+    rol ENUM('admin', 'vendedor') NOT NULL DEFAULT 'vendedor'
 );
 
-CREATE TABLE IF NOT EXISTS detalle_venta (
+-- Tabla: Ventas
+CREATE TABLE ventas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    total DECIMAL(10,2) NOT NULL,
+    usuario_id INT,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+-- Tabla: Detalle de ventas
+CREATE TABLE detalle_venta (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_venta INT,
     id_producto INT,
@@ -24,10 +38,8 @@ CREATE TABLE IF NOT EXISTS detalle_venta (
     FOREIGN KEY (id_venta) REFERENCES ventas(id),
     FOREIGN KEY (id_producto) REFERENCES productos(id)
 );
-CREATE TABLE IF NOT EXISTS usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(50) NOT NULL,
-    contraseña VARCHAR(50) NOT NULL
-);
 
-INSERT INTO usuarios (nombre, contraseña) VALUES ('admin', '1234');
+-- Usuarios iniciales
+INSERT INTO usuarios (nombre, contraseña, rol) VALUES
+('admin', '1234', 'admin'),
+('juan', 'vendedor123', 'vendedor');

@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from app import main_menu
+from app import interfaz  
 from app.db import conectar
 
 def ventana_login():
@@ -27,14 +27,15 @@ def ventana_login():
         try:
             conexion = conectar()
             cursor = conexion.cursor()
-            cursor.execute("SELECT * FROM usuarios WHERE nombre = %s AND contraseña = %s", (usuario, contrasena))
+            cursor.execute("SELECT nombre, rol FROM usuarios WHERE nombre = %s AND contraseña = %s", (usuario, contrasena))
             resultado = cursor.fetchone()
             conexion.close()
 
             if resultado:
-                messagebox.showinfo("Éxito", f"Bienvenido, {usuario}")
+                nombre_usuario, rol = resultado
+                messagebox.showinfo("Éxito", f"Bienvenido, {nombre_usuario} ({rol})")
                 ventana.destroy()
-                main_menu.mostrar_menu()
+                interfaz.mostrar_interfaz(usuario=nombre_usuario, rol=rol) 
             else:
                 messagebox.showerror("Error", "Credenciales incorrectas")
 

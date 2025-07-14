@@ -1,14 +1,10 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from app.db import conectar
+from app.utils import mostrar_mensaje_temporal
 
-def ventana_productos():
-    ventana = tk.Toplevel()
-    ventana.title("Gestión de Productos")
-    ventana.geometry("700x500")
-
-    # Treeview
-    tree = ttk.Treeview(ventana, columns=("ID", "Nombre", "Categoría", "Precio", "Stock"), show="headings")
+def cargar_vista(parent):
+    tree = ttk.Treeview(parent, columns=("ID", "Nombre", "Categoría", "Precio", "Stock"), show="headings")
     for col in ("ID", "Nombre", "Categoría", "Precio", "Stock"):
         tree.heading(col, text=col)
         tree.column(col, width=100)
@@ -26,30 +22,49 @@ def ventana_productos():
                 tree.insert("", "end", values=producto)
             conexion.close()
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo cargar productos\n{e}")
+            mostrar_mensaje_temporal(parent, f"Error cargando productos: {e}", "red")
 
     # Agregar producto
     def agregar_producto():
         def guardar():
-            nombre = entry_nombre.get()
-            categoria = entry_categoria.get()
-            precio = entry_precio.get()
-            stock = entry_stock.get()
-            if nombre and precio and stock:
-                try:
-                    conexion = conectar()
-                    cursor = conexion.cursor()
-                    cursor.execute("INSERT INTO productos (nombre, categoria, precio, stock) VALUES (%s, %s, %s, %s)",
-                                   (nombre, categoria, precio, stock))
-                    conexion.commit()
+            nombre = entry_nombre.get().strip()
+            categoria = entry_categoria.get().strip()
+            precio = entry_precio.get().strip()
+            stock = entry_stock.get().strip()
+
+            if not nombre or not precio or not stock:
+                mostrar_mensaje_temporal(ventana_agregar, "Complete los campos obligatorios", "orange")
+                return
+
+            try:
+                precio = float(precio)
+                stock = int(stock)
+                if precio < 0 or stock < 0:
+                    raise ValueError
+            except ValueError:
+                mostrar_mensaje_temporal(ventana_agregar, "Precio/stock inválido", "red")
+                return
+
+            try:
+                conexion = conectar()
+                cursor = conexion.cursor()
+                cursor.execute("SELECT COUNT(*) FROM productos WHERE nombre = %s", (nombre,))
+                if cursor.fetchone()[0] > 0:
                     conexion.close()
-                    messagebox.showinfo("Éxito", "Producto agregado correctamente")
-                    ventana_agregar.destroy()
-                    cargar_productos()
-                except Exception as e:
-                    messagebox.showerror("Error", f"No se pudo agregar producto\n{e}")
-            else:
-                messagebox.showwarning("Advertencia", "Complete todos los campos obligatorios")
+                    mostrar_mensaje_temporal(ventana_agregar, "Ya existe un producto con ese nombre", "red")
+                    return
+
+                cursor.execute(
+                    "INSERT INTO productos (nombre, categoria, precio, stock) VALUES (%s, %s, %s, %s)",
+                    (nombre, categoria, precio, stock)
+                )
+                conexion.commit()
+                conexion.close()
+                mostrar_mensaje_temporal(parent, "Producto agregado correctamente", "green")
+                ventana_agregar.destroy()
+                cargar_productos()
+            except Exception as e:
+                mostrar_mensaje_temporal(ventana_agregar, f"Error al guardar: {e}", "red")
 
         ventana_agregar = tk.Toplevel()
         ventana_agregar.title("Agregar Producto")
@@ -77,17 +92,31 @@ def ventana_productos():
     def editar_producto():
         selected = tree.selection()
         if not selected:
-            messagebox.showwarning("Advertencia", "Seleccione un producto")
+            mostrar_mensaje_temporal(parent, "Seleccione un producto", "orange")
             return
 
         item = tree.item(selected[0])
         id_producto, nombre_actual, categoria_actual, precio_actual, stock_actual = item["values"]
 
         def guardar_edicion():
-            nuevo_nombre = entry_nombre.get()
-            nueva_categoria = entry_categoria.get()
-            nuevo_precio = entry_precio.get()
-            nuevo_stock = entry_stock.get()
+            nuevo_nombre = entry_nombre.get().strip()
+            nueva_categoria = entry_categoria.get().strip()
+            nuevo_precio = entry_precio.get().strip()
+            nuevo_stock = entry_stock.get().strip()
+
+            if not nuevo_nombre or not nuevo_precio or not nuevo_stock:
+                mostrar_mensaje_temporal(ventana_editar, "Complete todos los campos", "orange")
+                return
+
+            try:
+                nuevo_precio = float(nuevo_precio)
+                nuevo_stock = int(nuevo_stock)
+                if nuevo_precio < 0 or nuevo_stock < 0:
+                    raise ValueError
+            except ValueError:
+                mostrar_mensaje_temporal(ventana_editar, "Valores inválidos", "red")
+                return
+
             try:
                 conexion = conectar()
                 cursor = conexion.cursor()
@@ -98,11 +127,11 @@ def ventana_productos():
                 """, (nuevo_nombre, nueva_categoria, nuevo_precio, nuevo_stock, id_producto))
                 conexion.commit()
                 conexion.close()
-                messagebox.showinfo("Éxito", "Producto actualizado")
+                mostrar_mensaje_temporal(parent, "Producto actualizado correctamente", "green")
                 ventana_editar.destroy()
                 cargar_productos()
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo actualizar\n{e}")
+                mostrar_mensaje_temporal(ventana_editar, f"Error: {e}", "red")
 
         ventana_editar = tk.Toplevel()
         ventana_editar.title("Editar Producto")
@@ -134,13 +163,13 @@ def ventana_productos():
     def eliminar_producto():
         selected = tree.selection()
         if not selected:
-            messagebox.showwarning("Advertencia", "Seleccione un producto")
+            mostrar_mensaje_temporal(parent, "Seleccione un producto para eliminar", "orange")
             return
 
         item = tree.item(selected[0])
         id_producto = item["values"][0]
 
-        confirm = messagebox.askyesno("Confirmar", "¿Seguro que desea eliminar este producto?")
+        confirm = tk.messagebox.askyesno("Confirmar", "¿Seguro que desea eliminar este producto?")
         if confirm:
             try:
                 conexion = conectar()
@@ -148,13 +177,13 @@ def ventana_productos():
                 cursor.execute("DELETE FROM productos WHERE id = %s", (id_producto,))
                 conexion.commit()
                 conexion.close()
-                messagebox.showinfo("Éxito", "Producto eliminado")
+                mostrar_mensaje_temporal(parent, "Producto eliminado", "green")
                 cargar_productos()
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo eliminar\n{e}")
+                mostrar_mensaje_temporal(parent, f"Error eliminando: {e}", "red")
 
     # Botones
-    frame_botones = tk.Frame(ventana)
+    frame_botones = tk.Frame(parent)
     frame_botones.pack(pady=10)
 
     tk.Button(frame_botones, text="Cargar Productos", command=cargar_productos).grid(row=0, column=0, padx=5)
